@@ -3,7 +3,7 @@ defmodule Featurette do
   # unregister
 end
 
-defmodule Chain do
+defmodule Hata.Chain do
   defmodule Link do
     @type treatment :: String.t
     @callback init(opts :: any) :: {:ok, state :: any} | {:error, reason :: any}
@@ -21,6 +21,15 @@ defmodule Chain do
           {:ok, chain ++ [{module, state}]}
         :error ->
           :error
+    end
+  end
+
+  def add_link!(chain, module, opts) do
+    case module.init(opts) do
+        {:ok, state} ->
+          chain ++ [{module, state}]
+        :error ->
+          raise "it bad"
     end
   end
 
@@ -42,8 +51,8 @@ defmodule Chain do
   end
 end
 
-defmodule Link.Default do
-  @behaviour Chain.Link
+defmodule Hata.Link.Default do
+  @behaviour Hata.Chain.Link
   def init(treatment) do
     {:ok, treatment}
   end
@@ -53,8 +62,8 @@ defmodule Link.Default do
   end
 end
 
-defmodule Link.Member do
-  @behaviour Chain.Link
+defmodule Hata.Link.Member do
+  @behaviour Hata.Chain.Link
   def init(opts) do
     key = Keyword.fetch!(opts, :key)
     collection = Keyword.fetch!(opts, :in)
@@ -76,8 +85,8 @@ defmodule Link.Member do
   end
 end
 
-defmodule Link.HashBucket do
-  @behaviour Chain.Link
+defmodule Hata.Link.HashBucket do
+  @behaviour Hata.Chain.Link
   def init(opts) do
     key = Keyword.fetch!(opts, :key)
     salt = Keyword.fetch!(opts, :salt)
@@ -86,7 +95,7 @@ defmodule Link.HashBucket do
 
     %{key: key,
       salt: salt,
-      buckets: buckets
+      buckets: buckets,
       total_weight: total}
   end
 
@@ -107,7 +116,7 @@ defmodule Link.HashBucket do
     :erlang.phash2(value, total)
   end
 
-  defp iterate([], number) do
+  defp iterate([], _number) do
     :error
   end
   defp iterate([{treatment, weight} | _rest], number) when number < weight do
